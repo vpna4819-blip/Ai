@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Chatbot UI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@300;400;500&family=Manjari:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #171717;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ഹെഡർ മെനു */
+        .header {
+            padding: 24px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .menu-icon {
+            width: 24px;
+            height: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .menu-icon span {
+            display: block;
+            height: 2px;
+            background-color: #ffffff;
+            border-radius: 2px;
+        }
+        .menu-icon span:nth-child(1), .menu-icon span:nth-child(2) { width: 100%; }
+        .menu-icon span:nth-child(3) { width: 60%; }
+
+        /* പ്രധാന ഭാഗം */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            width: 100%;
+        }
+
+        .greeting-text {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(28px, 6vw, 36px);
+            font-weight: 500;
+            text-align: center;
+            letter-spacing: -0.5px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* ലൈവ് ടെക്സ്റ്റ് */
+        .live-text-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            left: 20%;
+            text-align: right;
+            display: none;
+        }
+        .live-text {
+            font-family: 'Manjari', 'Inter', sans-serif;
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: 500;
+            color: #ffffff;
+            background: rgba(33, 33, 33, 0.8);
+            padding: 15px 20px;
+            border-radius: 20px 20px 0 20px;
+            display: inline-block;
+            word-wrap: break-word;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* താഴെയുള്ള ഇൻപുട്ട് ബാർ */
+        .footer {
+            padding: 15px 20px 25px 20px;
+            width: 100%;
+        }
+        .input-bar {
+            background-color: #212121;
+            border-radius: 28px;
+            display: flex;
+            align-items: flex-end; /* ടെക്സ്റ്റ് കൂടുമ്പോൾ താഴെ നിന്ന് മുകളിലേക്ക് വളരാൻ */
+            padding: 10px 15px;
+            width: 100%;
+            min-height: 55px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #9e9e9e;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            flex-shrink: 0;
+            width: 35px;
+            height: 35px;
+            margin-bottom: 2px; /* താഴെ അലൈൻ ചെയ്യാൻ */
+        }
+        
+        .plus-icon {
+            font-weight: 300;
+            margin-right: 5px;
+        }
+
+        .input-center {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 10px;
+            position: relative;
+        }
+
+        /* ടൈപ്പിംഗ് ബോക്സ് (Textarea) */
+        .text-input {
+            width: 100%;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            resize: none; /* യൂസർ വലുതാക്കുന്നത് തടയാൻ */
+            max-height: 120px; /* പരമാവധി ഉയരം */
+            min-height: 24px;
+            height: 24px;
+            line-height: 24px;
+            overflow-y: auto;
+            padding: 0;
+        }
+        .text-input::placeholder {
+            color: #9e9e9e;
+        }
+        
+        /* സ്ക്രോൾ ബാർ ഹൈഡ് ചെയ്യാൻ */
+        .text-input::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* ആക്ഷൻ ബട്ടണുകൾ (Mic & Send) */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .send-btn {
+            display: none; /* ആദ്യമേ മറച്ചുവെക്കുന്നു */
+            background-color: #ffffff;
+            color: #171717;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+        }
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: #171717;
+            margin-left: 2px;
+        }
+
+        /* വേവ്‌ലെങ്ത് ആനിമേഷൻ */
+        .waveform {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+        }
+        .wave-bar {
+            width: 4px;
+            height: 10px;
+            background-color: #007bff;
+            border-radius: 10px;
+            animation: wave 1s ease-in-out infinite alternate;
+        }
+        .wave-bar:nth-child(1) { animation-delay: 0.0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.2s; }
+
+        @keyframes wave {
+            0% { height: 10px; }
+            100% { height: 25px; }
+        }
+
+        /* മൈക്ക് ഐക്കൺ ആനിമേഷൻ */
+        .mic-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: #9e9e9e;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s ease;
+        }
+
+        .mic-active svg {
+            stroke: #007bff;
+            animation: micBlink 1s infinite alternate;
+        }
+
+        @keyframes micBlink {
+            0% { 
+                stroke: #007bff;
+                filter: drop-shadow(0 0 2px rgba(0, 123, 255, 0.5));
+            }
+            100% { 
+                stroke: #00d2ff;
+                filter: drop-shadow(0 0 8px rgba(0, 123, 255, 1));
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="menu-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1 class="greeting-text" id="greeting">Let's get to work.</h1>
+        
+        <div class="live-text-container" id="liveTextContainer">
+            <span class="live-text" id="liveText"></span>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="input-bar" id="inputBar">
+            <button class="icon-btn plus-icon">+</button>
+            
+            <div class="input-center">
+                <textarea class="text-input" id="textInput" placeholder="Ask anything..." rows="1"></textarea>
+                
+                <div class="waveform" id="waveform">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="icon-btn mic-icon" id="micBtn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+                <!-- പുതിയ സെൻഡ് ബട്ടൺ -->
+                <button class="icon-btn send-btn" id="sendBtn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const textInput = document.getElementById('textInput');
+        const inputBar = document.getElementById('inputBar');
+        const waveform = document.getElementById('waveform');
+        const liveTextContainer = document.getElementById('liveTextContainer');
+        const liveText = document.getElementById('liveText');
+        const greeting = document.getElementById('greeting');
+
+        let isRecording = false;
+
+        // --- ടൈപ്പിംഗ് ബോക്സ് വലുതാകലും ബട്ടൺ മാറ്റവും ---
+        textInput.addEventListener('input', function() {
+            // ബോക്സ് സ്വയം വലുതാകാൻ
+            this.style.height = '24px'; 
+            let newHeight = this.scrollHeight;
+            if(newHeight > 120) newHeight = 120; // പരമാവധി വലുപ്പം
+            this.style.height = newHeight + 'px';
+
+            // ബട്ടൺ മാറാൻ (Send & Mic)
+            if(this.value.trim().length > 0) {
+                sendBtn.style.display = 'flex'; // സെൻഡ് കാണിക്കുന്നു
+                // മൈക്ക് ഇടത്തോട്ട് മാറാൻ വേണ്ടി അത് നിലനിൽക്കും, സെൻഡ് വലത്തായി വരും
+            } else {
+                sendBtn.style.display = 'none'; // സെൻഡ് മറയ്ക്കുന്നു
+                this.style.height = '24px'; // വലിപ്പം പഴയപടിയാക്കാൻ
+            }
+        });
+
+
+        // --- വോയിസ് റെക്കഗ്നിഷൻ എപിഐ ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true; 
+            recognition.lang = 'ml-IN'; 
+
+            recognition.onstart = function() {
+                isRecording = true;
+                micBtn.classList.add('mic-active');
+                textInput.style.display = 'none';
+                sendBtn.style.display = 'none'; // സംസാരിക്കുമ്പോൾ സെൻഡ് മറയ്ക്കുക
+                waveform.style.display = 'flex';
+                greeting.style.opacity = '0.2';
+                liveTextContainer.style.display = 'block';
+                liveText.innerText = "സംസാരിക്കൂ...";
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                liveText.innerText = finalTranscript || interimTranscript;
+            };
+
+            recognition.onend = function() {
+                stopRecordingUI();
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error", event.error);
+                stopRecordingUI();
+            };
+
+            micBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                    stopRecordingUI();
+                } else {
+                    // ഇൻപുട്ട് ബോക്സിൽ ടെക്സ്റ്റ് ഉണ്ടെങ്കിൽ മൈക്ക് ഓഫ് ചെയ്യരുത് എന്ന് ആഗ്രഹിക്കുന്നുവെങ്കിൽ ഇവിടെ കോഡ് മാറ്റാം
+                    recognition.start();
+                }
+            });
+        } else {
+            alert("നിങ്ങളുടെ ബ്രൗസർ വോയ്‌സ് റെക്കഗ്നിഷൻ സപ്പോർട്ട് ചെയ്യുന്നില്ല. ദയവായി Google Chrome ഉപയോഗിക്കുക.");
+        }
+
+        function stopRecordingUI() {
+            isRecording = false;
+            micBtn.classList.remove('mic-active');
+            textInput.style.display = 'block';
+            waveform.style.display = 'none';
+            greeting.style.opacity = '1';
+            
+            if(textInput.value.trim().length > 0) {
+                sendBtn.style.display = 'flex';
+            }
+
+            setTimeout(() => {
+                if(!isRecording){
+                    liveTextContainer.style.display = 'none';
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
